@@ -1,0 +1,22 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma" // Optional: Define output path if needed
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ScriptSnip {
+  id         String   @id @default(cuid())
+  title      String?
+  characters String[]
+  lines      Json     // Represents { speaker: string, text: string }[]
+  createdAt  DateTime @default(now())
+
+  @@map("script_snips") // Maps to the 'script_snips' table
+}
