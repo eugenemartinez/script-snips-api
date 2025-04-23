@@ -56,9 +56,9 @@ app.post('/api/scripts', async (req: Request, res: Response) => {
 
 // --- Server Start ---
 // Remember: This works locally but is not standard for Vercel deployment
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//     console.log(`Server listening at http://localhost:${port}`);
+// });
 
 // Export the app for Vercel (May be ignored when app.listen is present)
 module.exports = app;
