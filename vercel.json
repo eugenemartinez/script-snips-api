@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
       {
-        "api": "index.ts",
+        "src": "/api/index.ts",
         "use": "@vercel/node",
         "config": {
           "runtime": "nodejs22.x",
