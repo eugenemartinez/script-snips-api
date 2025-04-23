@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "api/index.js",
   "scripts": {
-    "build": "prisma generate && tsc api/index.ts --outDir ./api --resolveJsonModule true --module commonjs --esModuleInterop true --target es6",
+    "build": "prisma generate && tsc",
     "dev": "nodemon api/index.ts",
     "start": "node api/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
