@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const app: Express = express();
-const port = process.env.PORT || 3000;
+// const port = process.env.PORT || 3000; // No longer needed here
 
 app.use(express.json()); // Middleware to parse JSON bodies
 
@@ -125,14 +125,17 @@ app.delete('/api/scripts/:id', async (req: Request, res: Response) => {
     }
 });
 
-
 // --- Server Start ---
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
+// REMOVE THIS BLOCK:
+// app.listen(port, () => {
+//     console.log(`Server listening at http://localhost:${port}`);
+// });
 
-// Optional: Graceful shutdown
-process.on('SIGINT', async () => {
-    await prisma.$disconnect();
-    process.exit(0);
-});
+// Optional: Graceful shutdown (might not work as expected in serverless, consider removing)
+// process.on('SIGINT', async () => {
+//     await prisma.$disconnect();
+//     process.exit(0);
+// });
+
+// Export the app for Vercel
+module.exports = app;
