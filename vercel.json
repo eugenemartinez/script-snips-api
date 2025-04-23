@@ -1,0 +1,20 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "api": "index.ts",
+        "use": "@vercel/node",
+        "config": {
+          "runtime": "nodejs22.x",
+          "buildCommand": "npm run build",
+          "includeFiles": ["api/**"]
+        }
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/api/index.js"
+      }
+    ]
+  }
