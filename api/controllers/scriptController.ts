@@ -37,8 +37,11 @@ export const getScriptById = async (req: Request, res: Response, next: NextFunct
             where: { id: String(id) },
         });
         if (!script) {
+            // Send response first, then return
             res.status(404).json({ error: 'Script not found' });
+            return; // Stop execution here
         }
+        // This line is now only reached if script was found
         res.status(200).json(script);
     } catch (error) {
         next(error);
