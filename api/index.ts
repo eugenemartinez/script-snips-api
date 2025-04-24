@@ -6,7 +6,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors'; // Import the cors middleware
 
 const app: Express = express();
-const port = process.env.PORT;
+const port = process.env.PORT; // Keep this for local dev if needed elsewhere
 
 // --- CORS Configuration ---
 // Define allowed origins. Replace 'http://localhost:YOUR_FRONTEND_PORT'
@@ -39,23 +39,26 @@ app.use(express.json());
 // --- Swagger/OpenAPI Setup ---
 const swaggerOptions = {
     definition: {
-        openapi: '3.0.0', // OpenAPI version
+        openapi: '3.0.0',
         info: {
             title: 'Script Snips API',
             version: '1.0.0',
             description: 'API for managing script snippets',
         },
         servers: [
+            // Use a relative URL for Vercel deployment
             {
-                // Adjust URL based on deployment or local environment
-                url: `http://localhost:${port}`,
-                description: 'Development server',
+                url: '/api', // Base path for API endpoints on Vercel
+                description: 'Vercel Server',
             },
-            // Add other servers like production if needed
+            // Optionally, keep localhost for local testing documentation
+            {
+                url: `http://localhost:${port || 3000}`, // Use default if port isn't set
+                description: 'Local Development Server',
+            }
         ],
     },
-    // Path to the API docs files (where JSDoc comments are)
-    apis: ['./api/routes/*.ts'], // Look for .ts files in the routes directory
+    apis: ['./api/routes/*.ts'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
