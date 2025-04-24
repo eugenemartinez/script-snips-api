@@ -6,7 +6,9 @@
     "dev": "nodemon api/index.ts",
     "start": "node api/index.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "prisma generate"
+
   },
   "keywords": [],
   "author": "",
