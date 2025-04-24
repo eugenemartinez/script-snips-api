@@ -3,40 +3,42 @@ import scriptRoutes from './routes/scriptRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
-import cors from 'cors'; // Import the cors middleware
+import cors from 'cors';
+// Import path and swagger-ui-dist
+import path from 'path';
+import swaggerUiDist from 'swagger-ui-dist';
 
 const app: Express = express();
 const port = process.env.PORT;
 
 // --- CORS Configuration ---
-// Define allowed origins. Replace 'http://localhost:YOUR_FRONTEND_PORT'
-// and 'YOUR_DEPLOYED_FRONTEND_URL' with your actual frontend URLs later.
 const allowedOrigins = [
-    'http://localhost:5173', // Example: Vite default local dev port
-    // 'https://your-frontend-app.vercel.app' // Example: Deployed frontend URL
+    'http://localhost:5173',
+    // Add your deployed frontend URL here later
 ];
-
 const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        // or requests from allowed origins
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    // Optional: You might need to allow specific methods or headers
-    // methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    // allowedHeaders: "Content-Type,Authorization",
-    // credentials: true // If you need to handle cookies or authorization headers
 };
 
-// --- Apply Middleware ---
-app.use(cors(corsOptions)); // Apply CORS middleware *before* routes
+// --- Apply Core Middleware ---
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// --- Swagger/OpenAPI Setup ---
+// --- Serve Swagger UI Static Files ---
+// Get the absolute path to the swagger-ui-dist directory
+const swaggerUiAssetPath = swaggerUiDist.getAbsoluteFSPath();
+// Serve static files from swagger-ui-dist. Mount BEFORE the main /api-docs route.
+// The browser path will be /api/swagger-static/... due to Vercel routing /api/*
+app.use('/api/swagger-static', express.static(swaggerUiAssetPath));
+
+
+// --- Swagger/OpenAPI Definition Setup ---
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -46,59 +48,53 @@ const swaggerOptions = {
             description: 'API for managing script snippets',
         },
         servers: [
-            // Use a relative URL for Vercel deployment
-            {
-                url: '/api', // Base path for API endpoints on Vercel
-                description: 'Vercel Server',
-            },
-            // Optionally, keep localhost for local testing documentation
-            {
-                url: `http://localhost:${port || 3000}`, // Use default if port isn't set
-                description: 'Local Development Server',
-            }
+            { url: '/api', description: 'Vercel Server' },
+            { url: `http://localhost:${port || 3000}`, description: 'Local Development Server' }
         ],
     },
+    // Make sure this path is relative to the project root where Vercel runs the build
     apis: ['./api/routes/*.ts'],
 };
-
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 
-// --- Mount Swagger UI Route ---
-// Define options for swaggerUi.setup
+// --- Mount Swagger UI Endpoint ---
 const swaggerUiOptions = {
-    // explorer: true, // Optional: enables search bar
-    customSiteTitle: "Script Snips API Docs", // Optional: Set browser tab title
-    // You might need customJs/customCssUrl if paths are still wrong,
-    // but let's try without them first.
+    customSiteTitle: "Script Snips API Docs",
+    // Point custom CSS and JS to the paths served by express.static above.
+    // These paths MUST include the /api prefix for Vercel.
+    customCssUrl: '/api/swagger-static/swagger-ui.css',
+    customJs: [
+        '/api/swagger-static/swagger-ui-bundle.js',
+        '/api/swagger-static/swagger-ui-standalone-preset.js'
+    ],
 };
 
-// Pass the options object as the third argument to swaggerUi.setup
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+// Use swaggerUi.serve for the route, then setup with the spec and options
+app.use('/api-docs', swaggerUi.serve); // Handles internal setup
+app.get('/api-docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions)); // Renders the page
 
 
-// --- Root Route Handler ---
+// --- Root & Test Routes ---
 app.get('/', (req: Request, res: Response) => {
     res.status(200).send('Basic Server Root OK - Updated Structure');
 });
-
-// --- Test Route ---
 app.get('/test', (req: Request, res: Response) => {
     res.status(200).send('Test route OK - Updated Structure');
 });
 
 // --- Mount Script Routes ---
-app.use('/api/scripts', scriptRoutes); // Routes are mounted *after* CORS
+app.use('/api/scripts', scriptRoutes);
 
 // --- Central Error Handler ---
 app.use(errorHandler);
 
-// --- Server Start ---
-// Only start listening if the file is run directly (not required by Vercel or tests)
+// --- Server Start (for local dev only) ---
 if (require.main === module) {
-    app.listen(port, () => {
-        console.log(`Server listening at http://localhost:${port}`);
-        console.log(`API Docs available at http://localhost:${port}/api-docs`); // Add this line
+    const localPort = port || 3000;
+    app.listen(localPort, () => {
+        console.log(`Server listening at http://localhost:${localPort}`);
+        console.log(`API Docs available at http://localhost:${localPort}/api-docs`);
     });
 }
 
