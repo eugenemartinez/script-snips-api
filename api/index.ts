@@ -4,7 +4,6 @@ import { errorHandler } from './middleware/errorHandler';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors';
-// Import path and swagger-ui-dist
 import path from 'path';
 import swaggerUiDist from 'swagger-ui-dist';
 
@@ -33,9 +32,10 @@ app.use(express.json());
 // --- Serve Swagger UI Static Files ---
 // Get the absolute path to the swagger-ui-dist directory
 const swaggerUiAssetPath = swaggerUiDist.getAbsoluteFSPath();
-// Serve static files from swagger-ui-dist. Mount BEFORE the main /api-docs route.
-// The browser path will be /api/swagger-static/... due to Vercel routing /api/*
-app.use('/api/swagger-static', express.static(swaggerUiAssetPath));
+// Serve static files directly from the /api/api-docs path.
+// Mount this BEFORE swaggerUi.serve/setup.
+// Vercel routes /api/* here, so browser path is /api/api-docs/...
+app.use('/api/api-docs', express.static(swaggerUiAssetPath));
 
 
 // --- Swagger/OpenAPI Definition Setup ---
@@ -52,27 +52,21 @@ const swaggerOptions = {
             { url: `http://localhost:${port || 3000}`, description: 'Local Development Server' }
         ],
     },
-    // Make sure this path is relative to the project root where Vercel runs the build
     apis: ['./api/routes/*.ts'],
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 
 // --- Mount Swagger UI Endpoint ---
+// Minimal options - remove customCssUrl and customJs
 const swaggerUiOptions = {
     customSiteTitle: "Script Snips API Docs",
-    // Point custom CSS and JS to the paths served by express.static above.
-    // These paths MUST include the /api prefix for Vercel.
-    customCssUrl: '/api/swagger-static/swagger-ui.css',
-    customJs: [
-        '/api/swagger-static/swagger-ui-bundle.js',
-        '/api/swagger-static/swagger-ui-standalone-preset.js'
-    ],
 };
 
-// Use swaggerUi.serve for the route, then setup with the spec and options
-app.use('/api-docs', swaggerUi.serve); // Handles internal setup
-app.get('/api-docs', swaggerUi.setup(swaggerSpec, swaggerUiOptions)); // Renders the page
+// Mount serve and setup together at /api-docs.
+// swagger-ui-express should hopefully find the static assets
+// served by express.static at the same base path.
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 
 // --- Root & Test Routes ---
