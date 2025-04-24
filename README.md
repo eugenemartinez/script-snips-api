@@ -9,7 +9,6 @@ This directory contains the backend API server for the Script Snips application,
 - Structured error handling
 - Rate limiting on script creation
 - Unit and integration tests using [Jest](https://jestjs.io/) and [Supertest](https://github.com/visionmedia/supertest)
-- API documentation using Swagger/OpenAPI
 
 ## 🛠 Prerequisites
 
@@ -61,7 +60,6 @@ This directory contains the backend API server for the Script Snips application,
 
 2. **Access the API**
    - API runs at: `http://localhost:3000`
-   - Swagger UI (API docs): `http://localhost:3000/api-docs`
 
 ## ✅ Testing
 
