@@ -6,7 +6,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors'; // Import the cors middleware
 
 const app: Express = express();
-const port = process.env.PORT; // Keep this for local dev if needed elsewhere
+const port = process.env.PORT;
 
 // --- CORS Configuration ---
 // Define allowed origins. Replace 'http://localhost:YOUR_FRONTEND_PORT'
@@ -63,8 +63,19 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
+
 // --- Mount Swagger UI Route ---
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Define options for swaggerUi.setup
+const swaggerUiOptions = {
+    // explorer: true, // Optional: enables search bar
+    customSiteTitle: "Script Snips API Docs", // Optional: Set browser tab title
+    // You might need customJs/customCssUrl if paths are still wrong,
+    // but let's try without them first.
+};
+
+// Pass the options object as the third argument to swaggerUi.setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+
 
 // --- Root Route Handler ---
 app.get('/', (req: Request, res: Response) => {
