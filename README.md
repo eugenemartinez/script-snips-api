@@ -1,83 +1,79 @@
-# Script Snips API Server
+# Script Snips - Backend API
 
-This directory contains the backend API server for the Script Snips application, built with Express.js and TypeScript.
+This is the backend API server for the Script Snips application, built with Node.js, Express, TypeScript, and Prisma. It provides endpoints to manage and retrieve fictional script snippets.
 
-## 🚀 Features
+## Features
 
-- CRUD operations for script snippets (Create, Read, Update, Delete)
-- Input validation using [Zod](https://github.com/colinhacks/zod)
-- Structured error handling
-- Rate limiting on script creation
-- Unit and integration tests using [Jest](https://jestjs.io/) and [Supertest](https://github.com/visionmedia/supertest)
+*   RESTful API for CRUD operations (Create, Read, Update, Delete) on script snippets.
+*   Endpoint to retrieve random script snippets.
+*   Endpoint to retrieve multiple scripts by ID.
+*   Uses Prisma ORM for database interaction with PostgreSQL (Neon).
+*   Basic rate limiting on creation endpoint.
 
-## 🛠 Prerequisites
+## Technologies Used
 
-- [Node.js](https://nodejs.org/) (LTS version recommended)
-- [npm](https://www.npmjs.com/), [yarn](https://yarnpkg.com/), or [pnpm](https://pnpm.io/)
-- A running PostgreSQL database instance
+*   [Node.js](https://nodejs.org/)
+*   [Express.js](https://expressjs.com/)
+*   [TypeScript](https://www.typescriptlang.org/)
+*   [Prisma](https://www.prisma.io/)
+*   [PostgreSQL](https://www.postgresql.org/) (Designed for Neon)
+*   [Zod](https://zod.dev/) (for validation - *optional, add if used*)
 
-## ⚙️ Setup for Local Development
+## Project Setup
 
-1. **Clone the Repository**  
-   *(if you haven't already)*
+1.  **Navigate to the server directory:**
+    ```bash
+    cd server
+    ```
 
-2. **Navigate to the Server Directory**  
-   ```bash
-   cd path/to/script-snips/server
-   ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-3. **Install Dependencies**  
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
+3.  **Set Up Environment Variables:**
+    *   Create a `.env` file in the `server` directory.
+    *   Add your Neon database connection string:
+        ```env
+        # Example: postgresql://user:password@host.neon.tech/dbname?sslmode=require
+        DATABASE_URL="YOUR_NEON_DATABASE_CONNECTION_STRING"
 
-4. **Set Up Environment Variables**  
-   - Create a `.env` file in the `server` directory
-   - Add the following variables:
+        # Optional: Define the port the server will run on
+        PORT=5001
+        ```
+        *Replace `"YOUR_NEON_DATABASE_CONNECTION_STRING"` with your actual connection string from Neon.*
 
-     ```env
-     DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
-     PORT=3000 # (Optional) Override default port
-     ```
+4.  **Apply Database Migrations:**
+    *   Ensure your database schema is up-to-date with your Prisma schema:
+        ```bash
+        npx prisma migrate dev --name init # Use a descriptive name if not the first migration
+        # or for production/staging environments:
+        # npx prisma migrate deploy
+        ```
 
-5. **Apply Database Migrations**  
-   Ensure your database schema matches the Prisma schema:
+## Development Server
 
-   ```bash
-   npx prisma migrate dev --name init
-   ```
+Run the following command to start the development server (usually with hot-reloading via `ts-node-dev` or similar):
 
-## 🧪 Running the Server Locally
-
-1. **Start the Development Server**
-   ```bash
-   npm run dev
-   ```
-
-2. **Access the API**
-   - API runs at: `http://localhost:3000`
-
-## ✅ Testing
-
-- Run the test suite:
-  ```bash
-  npm test
-  ```
-
-- Run tests with coverage reports:
-  ```bash
-  npm run test:coverage
-  ```
-
-- Coverage reports will be generated in the `coverage` directory.
-
----
-
-📦 Built with love using Node.js, Express, TypeScript, Prisma, and Neon.
+```bash
+npm run dev
+# or
+yarn dev
 ```
 
-Let me know if you want to add badges, author info, or a deployment section!
+The API will typically be available at `http://localhost:3000` (or the port specified in your `.env` or startup script).
+
+## API Endpoints
+
+*   `POST /api/scripts`: Create a new script snippet.
+*   `GET /api/scripts`: Get a list of all script snippets.
+*   `GET /api/scripts/random`: Get a single random script snippet.
+*   `GET /api/scripts/random-multiple?count=N`: Get `N` random script snippets.
+*   `GET /api/scripts/batch?ids=id1,id2,...`: Get multiple scripts by their IDs.
+*   `GET /api/scripts/:id`: Get a single script snippet by ID.
+*   `PUT /api/scripts/:id`: Update a script snippet by ID.
+*   `DELETE /api/scripts/:id`: Delete a script snippet by ID.
+
+*(Note: Refer to route definitions in `server/api/routes/scriptRoutes.ts` for exact details and any middleware.)*

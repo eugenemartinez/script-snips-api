@@ -5,8 +5,6 @@
   "scripts": {
     "dev": "nodemon api/index.ts",
     "start": "node api/index.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
     "postinstall": "prisma generate"
   },
   "keywords": [],
@@ -18,19 +16,16 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.15.5",
     "zod": "^3.24.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.14.1",
-    "@types/supertest": "^6.0.3",
-    "jest": "^29.7.0",
     "nodemon": "^3.1.10",
     "prisma": "^6.6.0",
-    "supertest": "^7.1.0",
-    "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express'; // Add NextFunction
 import scriptRoutes from './routes/scriptRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import cors from 'cors';
@@ -24,6 +24,13 @@ const corsOptions: cors.CorsOptions = {
 // --- Apply Core Middleware ---
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// --- Simple Request Logger Middleware ---
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const now = new Date().toISOString();
+    console.log(`[${now}] ${req.method} ${req.originalUrl}`);
+    next(); // Pass control to the next middleware/handler
+});
 
 // --- Root & Test Routes ---
 app.get('/', (req: Request, res: Response) => {
