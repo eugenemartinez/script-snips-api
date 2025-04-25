@@ -21,7 +21,8 @@ const corsOptions: cors.CorsOptions = {
 };
 
 // --- Apply Core Middleware ---
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions)); // Temporarily disable specific options
+app.use(cors()); // Allow all origins for testing
 app.use(express.json());
 
 // --- Simple Request Logger Middleware ---
