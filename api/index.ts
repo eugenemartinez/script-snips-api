@@ -8,8 +8,7 @@ const port = process.env.PORT;
 
 // --- CORS Configuration ---
 const allowedOrigins = [
-    'http://localhost:5173',
-    // Add your deployed frontend URL here later
+    'http://localhost:5173', 'https://scriptsnips.vercel.app'
 ];
 const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
