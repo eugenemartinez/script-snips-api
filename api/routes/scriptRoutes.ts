@@ -25,11 +25,12 @@ router.get('/random', getRandomScript);
 
 // GET /api/scripts/random-multiple - Retrieve multiple random script snippets
 // IMPORTANT: Place this BEFORE the /:id route
-router.get('/random-multiple', getRandomScripts); // <-- Add the new route
+router.get('/random-multiple', getRandomScripts);
 
-// GET /api/scripts/batch - Retrieve multiple scripts by comma-separated IDs
+// POST /api/scripts/batch - Retrieve multiple scripts by IDs in request body
 // IMPORTANT: Place this BEFORE the /:id route
-router.get('/batch', getScriptsByIds);
+// FIX: Change from GET to POST
+router.post('/batch', getScriptsByIds);
 
 // GET /api/scripts/:id - Retrieve a single script snippet by ID
 router.get('/:id', getScriptById);

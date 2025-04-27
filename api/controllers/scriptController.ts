@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../db';
 import { Prisma } from '@prisma/client';
-// Import the validation schemas
 import { createScriptSchema, updateScriptSchema } from '../schemas/scriptSchema';
+import { AppError } from '../middleware/errorHandler'; // <-- Import AppError
 
 // --- CREATE ---
 export const createScript = async (req: Request, res: Response, next: NextFunction) => {
@@ -32,11 +32,12 @@ export const getAllScripts = async (req: Request, res: Response, next: NextFunct
     const searchTerm = search ? `%${search}%` : undefined; // Prepare searchTerm only if search exists
 
     // 3. Get and validate sorting parameters
-    const allowedSortFields = ['title', 'createdAt']; // Define valid fields for sorting
+    const allowedSortFields = ['title', 'createdAt'];
     const defaultSortBy = 'createdAt';
     const defaultSortOrder = 'desc';
 
     let sortBy = req.query.sortBy as string || defaultSortBy;
+    // FIX: Ensure fallback happens *before* using sortBy in the query
     if (!allowedSortFields.includes(sortBy)) {
         sortBy = defaultSortBy; // Fallback to default if invalid field provided
     }
@@ -48,9 +49,8 @@ export const getAllScripts = async (req: Request, res: Response, next: NextFunct
 
     // 4. Validate pagination parameters
     if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
-        const error = new Error('Invalid pagination parameters. Page and limit must be positive integers.');
-        (error as any).statusCode = 400;
-        return next(error);
+        // Use AppError for correct status code handling
+        return next(new AppError('Invalid pagination parameters. Page and limit must be positive integers.', 400));
     }
 
     // 5. Calculate skip
@@ -71,21 +71,22 @@ export const getAllScripts = async (req: Request, res: Response, next: NextFunct
                 )`;
         }
 
-        // Dynamically construct ORDER BY clause safely
+        // Dynamically construct ORDER BY clause safely using the *final* validated sortBy/sortOrder
         let orderByRaw;
-        // Ensure sortBy is validated against allowedSortFields before using here
         if (sortBy === 'title') {
             // Apply LOWER() for case-insensitive title sort
+            // Use Prisma.raw for the sortOrder part to prevent SQL injection
             orderByRaw = Prisma.sql`ORDER BY LOWER("title") ${Prisma.raw(sortOrder)}`;
-        } else { // Default to createdAt (or other fields if added later)
+        } else { // Default to createdAt (or other validated fields)
+            // Use Prisma.raw for the sortOrder part
             orderByRaw = Prisma.sql`ORDER BY "createdAt" ${Prisma.raw(sortOrder)}`;
         }
 
         // Combine clauses for data query
         const dataQuery = Prisma.sql`
             SELECT * FROM script_snips
-            ${whereClause} -- Apply dynamic WHERE
-            ${orderByRaw} -- Apply dynamic ORDER BY
+            ${whereClause}
+            ${orderByRaw} -- Apply dynamic ORDER BY using final validated values
             LIMIT ${limit} OFFSET ${skip};
         `;
 
@@ -105,13 +106,22 @@ export const getAllScripts = async (req: Request, res: Response, next: NextFunct
         const scripts = dataResult as any[]; // Assign raw result
         let totalScripts: number = 0;
 
-        // Extract count
-        if (Array.isArray(countResult) && countResult.length > 0 && countResult[0].count) {
-             totalScripts = parseInt(countResult[0].count, 10);
+        // FIX: Correctly parse count from the result (which is an array with one object)
+        // and handle potential BigInt return type from raw query count
+        if (Array.isArray(countResult) && countResult.length > 0 && countResult[0] && typeof countResult[0].count !== 'undefined') {
+             try {
+                // Use parseInt or Number() to handle potential BigInt
+                totalScripts = parseInt(String(countResult[0].count), 10);
+             } catch (e) {
+                 console.warn("Could not parse count from raw query result:", countResult, e);
+                 // Decide how to handle - throw error, default to 0, etc.
+                 totalScripts = 0; // Defaulting to 0 if parsing fails
+             }
         } else {
-             console.warn("Could not parse count from raw query result:", countResult);
-             totalScripts = 0;
+             console.warn("Unexpected count query result format:", countResult);
+             totalScripts = 0; // Defaulting to 0 if format is wrong
         }
+
 
         // 7. Calculate total pages
         const totalPages = Math.ceil(totalScripts / limit);
@@ -120,12 +130,12 @@ export const getAllScripts = async (req: Request, res: Response, next: NextFunct
         res.status(200).json({
             data: scripts,
             pagination: {
-                totalScripts,
+                totalItems: totalScripts,
                 currentPage: page,
                 totalPages,
-                limit,
-                sortBy, // Include current sort in response
-                sortOrder
+                pageSize: limit, // Ensure pageSize is included
+                sortBy, // Use validated sortBy
+                sortOrder // Use validated sortOrder
             }
         });
 
@@ -157,37 +167,24 @@ export const getScriptById = async (req: Request, res: Response, next: NextFunct
 // --- READ RANDOM ---
 export const getRandomScript = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // 1. Get the total count of scripts
         const count = await prisma.scriptSnip.count();
 
-        // 2. Handle case where there are no scripts
         if (count === 0) {
-            const error = new Error('No scripts available to choose from.');
-            (error as any).statusCode = 404;
-            return next(error); // Use next
+            // Use AppError for correct status code handling
+            return next(new AppError('No scripts available to choose from.', 404));
         }
 
-        // 3. Generate a random index (0 to count - 1)
         const randomIndex = Math.floor(Math.random() * count);
+        const randomScript = await prisma.scriptSnip.findFirst({ skip: randomIndex });
 
-        // 4. Fetch one script using the random index as skip
-        const randomScript = await prisma.scriptSnip.findFirst({
-            skip: randomIndex,
-        });
-
-        // 5. Handle potential edge case where findFirst returns null
         if (!randomScript) {
              console.error("Failed to find random script despite count > 0. Index:", randomIndex, "Count:", count);
-             const error = new Error('Failed to retrieve a random script.');
-             (error as any).statusCode = 500;
-             return next(error); // Use next
+             // Use AppError for internal server errors too, if desired, or keep generic Error for 500
+             return next(new AppError('Failed to retrieve a random script.', 500)); // Or keep as new Error() if 500 is acceptable default
         }
 
-        // 6. Return the found script
         res.status(200).json(randomScript);
-
     } catch (error) {
-        // Pass other database/unexpected errors to the central handler
         next(error);
     }
 };
@@ -195,18 +192,23 @@ export const getRandomScript = async (req: Request, res: Response, next: NextFun
 
 // --- READ MULTIPLE RANDOM ---
 export const getRandomScripts = async (req: Request, res: Response, next: NextFunction) => {
-    // 1. Get and validate count parameter
     const countParam = req.query.count as string;
-    let count = 3; // Default count
+    let count = 3;
     if (countParam) {
         const parsedCount = parseInt(countParam, 10);
-        if (!isNaN(parsedCount) && parsedCount > 0) {
-            count = parsedCount;
-        } else {
-            const error = new Error('Invalid count parameter. Must be a positive integer.');
-            (error as any).statusCode = 400;
-            return next(error);
+
+        // Handle count=0 explicitly (assuming 200 OK with empty array is desired)
+        if (parsedCount === 0) {
+             res.status(200).json([]);
+             return
         }
+
+        // Check for NaN or negative numbers
+        if (isNaN(parsedCount) || parsedCount < 0) {
+             // Use AppError for correct status code handling
+             return next(new AppError('Invalid count parameter. Must be a positive integer.', 400));
+        }
+        count = parsedCount;
     }
 
     // 2. Get and validate excludeIds parameter (comma-separated string)
@@ -255,44 +257,32 @@ export const getRandomScripts = async (req: Request, res: Response, next: NextFu
 };
 
 
-// --- READ MULTIPLE BY IDS (for Scene Stash) ---
+// --- READ MULTIPLE BY ID ---
 export const getScriptsByIds = async (req: Request, res: Response, next: NextFunction) => {
-    const idsQuery = req.query.ids as string; // Expecting comma-separated string like "id1,id2,id3"
+    // FIX: Read IDs from request body
+    const { ids } = req.body;
 
-    if (!idsQuery) {
-        // If no IDs are provided, return an empty array immediately
-        res.status(200).json([]);
-        return;
-    }
-
-    // Split the string into an array and trim whitespace
-    const ids = idsQuery.split(',').map(id => id.trim()).filter(id => id); // Filter out empty strings
-
-    if (ids.length === 0) {
-        // If after trimming/filtering, the array is empty, return empty
-        res.status(200).json([]);
-        return;
+    // Validate input: Ensure 'ids' is a non-empty array of strings
+    if (!Array.isArray(ids) || ids.length === 0 || !ids.every(id => typeof id === 'string')) {
+        return next(new AppError('Invalid input: \'ids\' must be a non-empty array of strings.', 400));
     }
 
     try {
         const scripts = await prisma.scriptSnip.findMany({
             where: {
                 id: {
-                    in: ids, // Use the 'in' filter to find multiple IDs
+                    in: ids,
                 },
             },
-            // Optional: Add an order by clause if you want the results in a specific order
-            // orderBy: {
-            //     createdAt: 'desc' // Example: order by creation date
-            // }
         });
 
-        // Note: findMany won't error if some IDs aren't found, it just won't return them.
+        // Note: findMany doesn't error if some IDs aren't found, it just returns the ones it finds.
         res.status(200).json(scripts);
 
     } catch (error) {
+        // Handle potential database errors or other unexpected issues
         console.error("Error in getScriptsByIds:", error);
-        next(error); // Pass errors to the central handler
+        next(error); // Pass to the central error handler
     }
 };
 
