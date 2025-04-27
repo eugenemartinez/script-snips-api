@@ -67,13 +67,13 @@ The API will typically be available at `http://localhost:3000` (or the port spec
 
 ## API Endpoints
 
-*   `POST /api/scripts`: Create a new script snippet.
-*   `GET /api/scripts`: Get a list of all script snippets.
+*   `POST /api/scripts`: Create a new script snippet. (Rate limited)
+*   `GET /api/scripts`: Get a list of all script snippets (supports pagination, sorting, filtering - check controller for details).
 *   `GET /api/scripts/random`: Get a single random script snippet.
-*   `GET /api/scripts/random-multiple?count=N`: Get `N` random script snippets.
-*   `GET /api/scripts/batch?ids=id1,id2,...`: Get multiple scripts by their IDs.
+*   `GET /api/scripts/random-multiple?count=N`: Get `N` random script snippets (defaults to 3 if count is omitted).
+*   `POST /api/scripts/batch`: Get multiple scripts by their IDs (expects `{ "ids": ["id1", "id2", ...] }` in the request body).
 *   `GET /api/scripts/:id`: Get a single script snippet by ID.
 *   `PUT /api/scripts/:id`: Update a script snippet by ID.
 *   `DELETE /api/scripts/:id`: Delete a script snippet by ID.
 
-*(Note: Refer to route definitions in `server/api/routes/scriptRoutes.ts` for exact details and any middleware.)*
+*(Note: Refer to route definitions in `server/api/routes/scriptRoutes.ts` and controller logic in `server/api/controllers/scriptController.ts` for exact details, request/response formats, and any middleware.)*
