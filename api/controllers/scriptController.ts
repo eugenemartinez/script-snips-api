@@ -9,7 +9,7 @@ export const createScript = async (req: Request, res: Response, next: NextFuncti
     try {
         // --- BEGIN HARD LIMIT CHECK ---
         const currentScriptCount = await prisma.scriptSnip.count();
-        const MAX_SCRIPTS_ALLOWED = 50;
+        const MAX_SCRIPTS_ALLOWED = 500;
 
         if (currentScriptCount >= MAX_SCRIPTS_ALLOWED) {
             // Use AppError for a structured error response
