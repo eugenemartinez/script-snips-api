@@ -2,11 +2,23 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../db';
 import { Prisma } from '@prisma/client';
 import { createScriptSchema, updateScriptSchema } from '../schemas/scriptSchema';
-import { AppError } from '../middleware/errorHandler'; // <-- Import AppError
+import { AppError } from '../middleware/errorHandler'; // Ensure AppError is imported
 
 // --- CREATE ---
 export const createScript = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // --- BEGIN HARD LIMIT CHECK ---
+        const currentScriptCount = await prisma.scriptSnip.count();
+        const MAX_SCRIPTS_ALLOWED = 50;
+
+        if (currentScriptCount >= MAX_SCRIPTS_ALLOWED) {
+            // Use AppError for a structured error response
+            // 403 Forbidden is appropriate as the request is understood but refused
+            // Or 503 Service Unavailable if you want to indicate the service is temporarily unable to handle the request
+            return next(new AppError(`Database limit reached. Cannot create more than ${MAX_SCRIPTS_ALLOWED} scripts.`, 403));
+        }
+        // --- END HARD LIMIT CHECK ---
+
         // Now createScriptSchema is recognized
         const validatedData = createScriptSchema.parse(req.body);
         const { title, characters, lines } = validatedData;
